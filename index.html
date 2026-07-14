@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build Your Own X — 中文导航</title>
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --card-bg: #1a1a1a;
+    --border: #2a2a2a;
+    --text: #e0e0e0;
+    --text-dim: #888;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --tag-bg: #1f2937;
+    --tag-text: #93c5fd;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .container { max-width: 1400px; margin: 0 auto; padding: 0 20px; }
+
+  /* Header */
+  header {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border-bottom: 1px solid var(--border);
+    padding: 40px 0 30px;
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  header h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 8px; }
+  header h1 span { color: var(--accent); }
+  header p { color: var(--text-dim); font-size: 1rem; margin-bottom: 20px; }
+  header .subtitle { font-size: 0.85rem; color: #666; }
+  header .subtitle a { color: var(--accent); text-decoration: none; }
+
+  /* Search & Filter */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 30px;
+    align-items: center;
+  }
+  .search-box {
+    position: relative;
+    flex: 1;
+    max-width: 500px;
+    min-width: 200px;
+  }
+  .search-box input {
+    width: 100%;
+    padding: 10px 16px 10px 40px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    font-size: 0.95rem;
+    outline: none;
+    transition: border .2s;
+  }
+  .search-box input:focus { border-color: var(--accent); }
+  .search-box .icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    font-size: 1.1rem;
+  }
+  .lang-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+  }
+  .lang-filter button {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text-dim);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .lang-filter button:hover, .lang-filter button.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: #1a2332;
+  }
+  .lang-filter button.all-btn {
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+  .lang-filter button.all-btn.active { background: #1a2e1a; }
+
+  /* Stats */
+  .stats { text-align: center; color: var(--text-dim); font-size: 0.85rem; margin-bottom: 20px; }
+
+  /* Category */
+  .category { margin-bottom: 40px; }
+  .category-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .category-title .count {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 12px;
+  }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    transition: all .2s;
+    display: flex;
+    flex-direction: column;
+  }
+  .card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(88,166,255,.08);
+  }
+  .card-title {
+    font-size: 0.95rem;
+    font-weight: 500;
+    line-height: 1.5;
+    margin-bottom: 10px;
+    flex: 1;
+  }
+  .card-title a {
+    color: var(--text);
+    text-decoration: none;
+  }
+  .card-title a:hover { color: var(--accent); }
+  .card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+  }
+  .tag-video { background: #2d1b2d; color: #f9a8d4; }
+  .tag-pdf { background: #1b2d1b; color: #86efac; }
+  .tag-book { background: #2d2d1b; color: #fde68a; }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+  .empty .big { font-size: 3rem; margin-bottom: 10px; }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 30px 0;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border);
+    margin-top: 20px;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    header h1 { font-size: 1.6rem; }
+    .card-grid { grid-template-columns: 1fr; }
+    .controls { flex-direction: column; }
+    .search-box { max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <h1>🛠️ <span>Build Your Own X</span> — 中文导航</h1>
+    <p>从零开始重建你最爱的技术。动手学习，深入理解。</p>
+    <p class="subtitle">
+      原始项目 · <a href="https://github.com/codecrafters-io/build-your-own-x" target="_blank">codecrafters-io/build-your-own-x</a>
+      &nbsp;|&nbsp; 中文维护 · <a href="https://github.com/cymylive/build-your-own-x" target="_blank">cymylive/build-your-own-x</a>
+    </p>
+  </div>
+</header>
+
+<div class="container">
+
+<div class="controls">
+  <div class="search-box">
+    <span class="icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="搜索教程名称、语言或关键词…" oninput="filterCards()">
+  </div>
+  <div class="lang-filter" id="langFilter"></div>
+</div>
+
+<div class="stats" id="stats"></div>
+
+<div id="cardsContainer"></div>
+
+<footer>
+  <a href="https://github.com/cymylive/build-your-own-x" target="_blank">GitHub 仓库</a>
+  &nbsp;·&nbsp; 根据 <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank">CC0</a> 许可发布
+</footer>
+
+</div>
+
+<script>
+const data = [
+  {
+    c: "分布式系统", cat: "Distributed Systems",
+    items: [
+      { t: "从零构建类 Kafka 系统：逐步指南", l: "Java", u: "https://github.com/buildthingsuseful/build-your-own-kafka" }
+    ]
+  },
+  {
+    c: "3D 渲染器", cat: "3D Renderer",
+    items: [
+      { t: "光线追踪入门：创建3D图像的简单方法", l: "C++", u: "https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-ray-tracing/how-does-it-work" },
+      { t: "OpenGL 工作原理：500行代码实现软件渲染", l: "C++", u: "https://github.com/ssloy/tinyrenderer/wiki" },
+      { t: "Wolfenstein 3D 射线投射引擎", l: "C++", u: "http://lodev.org/cgtutor/raycasting.html" },
+      { t: "基于物理的渲染：从理论到实现", l: "C++", u: "http://www.pbr-book.org/" },
+      { t: "一周学会光线追踪", l: "C++", u: "https://raytracing.github.io/books/RayTracingInOneWeekend.html" },
+      { t: "光栅化：实用实现", l: "C++", u: "https://www.scratchapixel.com/lessons/3d-basic-rendering/rasterization-practical-implementation/overview-rasterization-algorithm" },
+      { t: "从零编写 3D 软渲染引擎（C#/TypeScript/JavaScript）", l: "C# / TypeScript / JavaScript", u: "https://www.davrous.com/2013/06/13/tutorial-series-learning-how-to-write-a-3d-soft-engine-from-scratch-in-c-typescript-or-javascript/" },
+      { t: "构建你自己的 3D 渲染器", l: "Java / JavaScript", u: "https://avik-das.github.io/build-your-own-raytracer/" },
+      { t: "用纯 Java 创建你自己的简单 3D 渲染引擎", l: "Java", u: "http://blog.rogach.org/2015/08/how-to-create-your-own-simple-3d-render.html" },
+      { t: "计算机图形学从零开始", l: "JavaScript / Pseudocode", u: "http://www.gabrielgambetta.com/computer-graphics-from-scratch/introduction.html" },
+      { t: "3D 建模器", l: "Python", u: "http://aosabook.org/en/500L/a-3d-modeller.html" }
+    ]
+  },
+  {
+    c: "AI 模型", cat: "AI Model",
+    items: [
+      { t: "从零构建大语言模型（LLM）", l: "Python", u: "https://github.com/rasbt/LLMs-from-scratch" },
+      { t: "图像生成的扩散模型", l: "Python", u: "https://huggingface.co/learn/diffusion-course/en/unit1/3" },
+      { t: "文档搜索 RAG 系统", l: "Python", u: "https://github.com/langchain-ai/rag-from-scratch" }
+    ]
+  },
+  {
+    c: "增强现实", cat: "Augmented Reality",
+    items: [
+      { t: "Vuforia + Unity 3D 增强现实入门", l: "C#", u: "https://www.youtube.com/watch?v=uXNjNcqW4kY", k: "video" },
+      { t: "Unity ARCore 教程", l: "C#", u: "https://www.youtube.com/playlist?list=PLKIKuXdn4ZMjuUAtdQfK1vwTZPQn_rgSv", k: "video" },
+      { t: "Unity AR 传送门教程", l: "C#", u: "https://www.youtube.com/playlist?list=PLPCqNOwwN794Gz5fzUSi1p4OqLU0HTmvn", k: "video" },
+      { t: "在 Unity ARCore 中创建增强现实龙", l: "C#", u: "https://www.youtube.com/watch?v=qTSDPkPyPqs", k: "video" },
+      { t: "ARKit 传送门教程", l: "C#", u: "https://www.youtube.com/watch?v=Z5AmqMuNi08", k: "video" },
+      { t: "Python + OpenCV 实现增强现实", l: "Python", u: "https://bitesofcode.wordpress.com/2017/09/12/augmented-reality-with-python-and-opencv-part-1/" }
+    ]
+  },
+  {
+    c: "BitTorrent 客户端", cat: "BitTorrent Client",
+    items: [
+      { t: "从零构建 BitTorrent 客户端", l: "C#", u: "https://www.seanjoflynn.com/research/bittorrent.html" },
+      { t: "用 Go 从头实现 BitTorrent 客户端", l: "Go", u: "https://blog.jse.li/posts/torrent/" },
+      { t: "编写 Bencode 解析器", l: "Nim", u: "https://xmonader.github.io/nimdays/day02_bencode.html" },
+      { t: "编写你自己的 BitTorrent 客户端", l: "Node.js", u: "https://allenkim67.github.io/programming/2016/05/04/how-to-make-your-own-bittorrent-client.html" },
+      { t: "Python 3.5 BitTorrent 客户端", l: "Python", u: "http://markuseliasson.se/article/bittorrent-in-python/" }
+    ]
+  },
+  {
+    c: "区块链 / 加密货币", cat: "Blockchain / Cryptocurrency",
+    items: [
+      { t: "函数式区块链", l: "ATS", u: "https://beta.observablehq.com/@galletti94/functional-blockchain" },
+      { t: "用 Crystal 编写区块链和 PoW 算法", l: "Crystal", u: "https://medium.com/@bradford_hamilton/write-your-own-blockchain-and-pow-algorithm-using-crystal-d53d5d9d0c52" },
+      { t: "用 Go 构建区块链", l: "Go", u: "https://jeiwan.net/posts/building-blockchain-in-go-part-1/" },
+      { t: "200 行 Go 代码实现区块链", l: "Go", u: "https://medium.com/@mycoralhealth/code-your-own-blockchain-in-less-than-200-lines-of-go-e296282bcffc" },
+      { t: "用 Java 创建你的第一个区块链", l: "Java", u: "https://medium.com/programmers-blockchain/create-simple-blockchain-java-tutorial-from-scratch-6eeed3cb03fa" },
+      { t: "1500 行以内的加密货币实现", l: "JavaScript", u: "https://github.com/conradoqg/naivecoin" },
+      { t: "用 JavaScript 构建你自己的区块链", l: "JavaScript", u: "https://github.com/nambrot/blockchain-in-js" },
+      { t: "学习并构建 JavaScript 区块链", l: "JavaScript", u: "https://medium.com/digital-alchemy-holdings/learn-build-a-javascript-blockchain-part-1-ca61c285821e" },
+      { t: "用 JavaScript 创建区块链", l: "JavaScript", u: "https://github.com/SavjeeTutorials/SavjeeCoin" },
+      { t: "如何发布你自己的生产级加密货币", l: "JavaScript", u: "https://hackernoon.com/how-to-launch-your-own-production-ready-cryptocurrency-ab97cb773371" },
+      { t: "在 Node.js 中实现区块链", l: "JavaScript", u: "https://www.smashingmagazine.com/2020/02/cryptocurrency-blockchain-node-js/" },
+      { t: "在 Kotlin 中实现加密货币", l: "Kotlin", u: "https://medium.com/@vasilyf/lets-implement-a-cryptocurrency-in-kotlin-part-1-blockchain-8704069f8580" },
+      { t: "通过构建一个来学习区块链", l: "Python", u: "https://hackernoon.com/learn-blockchains-by-building-one-117428612f46" },
+      { t: "构建你自己的区块链：Python 教程", l: "Python", u: "http://ecomunsing.com/build-your-own-blockchain" },
+      { t: "区块链与 Python 实用入门", l: "Python", u: "http://adilmoujahid.com/posts/2018/03/intro-blockchain-bitcoin-python/" },
+      { t: "构建最小的区块链", l: "Python", u: "https://medium.com/crypto-currently/lets-build-the-tiniest-blockchain-e70965a248b" },
+      { t: "逐步编程区块链", l: "Ruby", u: "https://github.com/yukimotopress/programming-blockchains-step-by-step" },
+      { t: "构建基于 Actor 的简单区块链", l: "Scala", u: "https://medium.freecodecamp.org/how-to-build-a-simple-actor-based-blockchain-aac1e996c177" },
+      { t: "Naivecoin：构建加密货币教程", l: "TypeScript", u: "https://lhartikk.github.io/" },
+      { t: "NaivecoinStake：PoS 共识加密货币教程", l: "TypeScript", u: "https://naivecoinstake.learn.uno/" },
+      { t: "用 Rust + Substrate 构建区块链", l: "Rust", u: "https://hackernoon.com/building-a-blockchain-in-rust-and-substrate-a-step-by-step-guide-for-developers-kc223ybp" }
+    ]
+  },
+  {
+    c: "机器人", cat: "Bot",
+    items: [
+      { t: "打造你自己的 IRC 机器人", l: "Haskell", u: "https://wiki.haskell.org/Roll_your_own_IRC_bot" },
+      { t: "用 API.ai + Node.js 创建 Facebook Messenger AI 机器人", l: "Node.js", u: "https://tutorials.botsfloor.com/creating-a-simple-facebook-messenger-ai-bot-with-api-ai-in-node-js-50ae2fa5c80d" },
+      { t: "制作响应式 Telegram 机器人", l: "Node.js", u: "https://www.sohamkamani.com/blog/2016/09/21/making-a-telegram-bot/" },
+      { t: "创建 Discord 机器人", l: "Node.js", u: "https://discordjs.guide/" },
+      { t: "gifbot - 构建 GitHub App", l: "Node.js", u: "https://blog.scottlogic.com/2017/05/22/gifbot-github-integration.html" },
+      { t: "用 Web Speech API + Node.js 构建 AI 聊天机器人", l: "Node.js", u: "https://www.smashingmagazine.com/2017/08/ai-chatbot-web-speech-api-node-js/" },
+      { t: "用 Python 构建你的第一个 Slack 机器人", l: "Python", u: "https://www.fullstackpython.com/blog/build-first-slack-bot-python.html" },
+      { t: "用 Python + Slack Events API + Django 构建 Slack 机器人", l: "Python", u: "https://medium.com/freehunch/how-to-build-a-slack-bot-with-python-using-slack-events-api-django-under-20-minute-code-included-269c3a9bf64e" },
+      { t: "构建 Reddit 机器人", l: "Python", u: "https://pythonforengineers.com/blog/build-a-reddit-bot-part-1/" },
+      { t: "如何制作 Reddit 机器人", l: "Python", u: "https://www.youtube.com/watch?v=krTUf7BpTc0", k: "video" },
+      { t: "用 Python 创建 Telegram 机器人", l: "Python", u: "https://www.freecodecamp.org/news/how-to-create-a-telegram-bot-using-python/" },
+      { t: "用 Tweepy 创建 Twitter 机器人", l: "Python", u: "https://medium.freecodecamp.org/creating-a-twitter-bot-in-python-with-tweepy-ac524157a607" },
+      { t: "Python & PRAW 创建 Reddit 机器人", l: "Python", u: "https://www.youtube.com/playlist?list=PLIFBTFgFpoJ9vmYYlfxRFV6U_XhG-4fpP", k: "video" },
+      { t: "用 R 构建加密货币交易机器人", l: "R", u: "https://towardsdatascience.com/build-a-cryptocurrency-trading-bot-with-r-1445c429e1b1" },
+      { t: "Rust/C 的星际争霸机器人", l: "Rust", u: "https://habr.com/en/post/436254/" }
+    ]
+  },
+  {
+    c: "命令行工具", cat: "Command-Line Tool",
+    items: [
+      { t: "用 Go 可视化本地 Git 贡献", l: "Go", u: "https://flaviocopes.com/go-git-contributions/" },
+      { t: "用 Go 构建命令行应用：lolcat", l: "Go", u: "https://flaviocopes.com/go-tutorial-lolcat/" },
+      { t: "用 Go 构建 CLI 命令：cowsay", l: "Go", u: "https://flaviocopes.com/go-tutorial-cowsay/" },
+      { t: "Go CLI 教程：fortune 克隆", l: "Go", u: "https://flaviocopes.com/go-tutorial-fortune/" },
+      { t: "编写 stow 替代工具管理点文件", l: "Nim", u: "https://xmonader.github.io/nimdays/day06_nistow.html" },
+      { t: "用 JavaScript 创建 CLI 工具", l: "Node.js", u: "https://citw.dev/tutorial/create-your-own-cli-tool" },
+      { t: "Rust 命令行应用", l: "Rust", u: "https://rust-cli.github.io/book/index.html" },
+      { t: "用 Rust 编写命令行工具", l: "Rust", u: "https://mattgathu.dev/2017/08/29/writing-cli-app-rust.html" },
+      { t: "从零用 Zig 构建 CLI 应用", l: "Zig", u: "https://rebuild-x.github.io/docs/#/./zig/terminal/cli" }
+    ]
+  },
+  {
+    c: "数据库", cat: "Database",
+    items: [
+      { t: "构建一个简单的数据库", l: "C", u: "https://cstack.github.io/db_tutorial/" },
+      { t: "从零构建你自己的 Redis", l: "C++", u: "https://build-your-own.org/redis" },
+      { t: "构建你自己的数据库", l: "C#", u: "https://www.codeproject.com/Articles/1029838/Build-Your-Own-Database" },
+      { t: "受考古启发的数据库", l: "Clojure", u: "http://aosabook.org/en/500L/an-archaeology-inspired-database.html" },
+      { t: "为什么要构建自己的 NoSQL 数据库", l: "Crystal", u: "https://medium.com/@marceloboeira/why-you-should-build-your-own-nosql-database-9bbba42039f5" },
+      { t: "从零构建数据库：3000行从 B+Tree 到 SQL", l: "Go", u: "https://build-your-own.org/database/" },
+      { t: "45 步编写数据库：TDD 编码挑战系列", l: "Go", u: "https://trialofcode.org/database/" },
+      { t: "从零构建你自己的 Redis", l: "Go", u: "https://www.build-redis-from-scratch.dev/" },
+      { t: "Dagoba：内存图数据库", l: "JavaScript", u: "http://aosabook.org/en/500L/dagoba-an-in-memory-graph-database.html" },
+      { t: "DBDB：狗床数据库", l: "Python", u: "http://aosabook.org/en/500L/dbdb-dog-bed-database.html" },
+      { t: "用 Python 编写微型 Redis", l: "Python", u: "http://charlesleifer.com/blog/building-a-simple-redis-server-with-python/" },
+      { t: "用 Ruby 构建快速持久化 KV 存储", l: "Ruby", u: "https://dineshgowda.com/posts/build-your-own-persistent-kv-store/" },
+      { t: "构建你自己的 Redis 客户端和服务器", l: "Rust", u: "https://tokio.rs/tokio/tutorial/setup" }
+    ]
+  },
+  {
+    c: "Docker", cat: "Docker",
+    items: [
+      { t: "500 行代码实现 Linux 容器", l: "C", u: "https://blog.lizzie.io/linux-containers-in-500-loc.html" },
+      { t: "100 行 Go 代码构建容器", l: "Go", u: "https://www.infoq.com/articles/build-a-container-golang" },
+      { t: "从零用 Go 构建容器", l: "Go", u: "https://www.youtube.com/watch?v=8fi7uSYlOdc", k: "video" },
+      { t: "Linux 容器工作坊：从零重建 Docker", l: "Python", u: "https://github.com/Fewbytes/rubber-docker" },
+      { t: "100% Python 实现的 Docker 概念验证", l: "Python", u: "https://github.com/tonybaloney/mocker" },
+      { t: "约 100 行 bash 实现的 Docker", l: "Shell", u: "https://github.com/p8952/bocker" }
+    ]
+  },
+  {
+    c: "模拟器 / 虚拟机", cat: "Emulator / Virtual Machine",
+    items: [
+      { t: "自制字节码解释器", l: "C", u: "https://medium.com/bumble-tech/home-grown-bytecode-interpreters-51e12d59b25c" },
+      { t: "C 语言虚拟机", l: "C", u: "http://web.archive.org/web/20200121100942/https://blog.felixangell.com/virtual-machine-in-c/" },
+      { t: "编写你自己的虚拟机", l: "C", u: "https://justinmeiners.github.io/lc3-vm/" },
+      { t: "编写 Game Boy 模拟器 Cinoop", l: "C", u: "https://cturt.github.io/cinoop.html" },
+      { t: "如何编写模拟器（CHIP-8 解释器）", l: "C++", u: "http://www.multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/" },
+      { t: "模拟器教程（CHIP-8 解释器）", l: "C++", u: "http://www.codeslinger.co.uk/pages/projects/chip8.html" },
+      { t: "模拟器教程（GameBoy 模拟器）", l: "C++", u: "http://www.codeslinger.co.uk/pages/projects/gameboy.html" },
+      { t: "模拟器教程（Master System 模拟器）", l: "C++", u: "http://www.codeslinger.co.uk/pages/projects/mastersystem/memory.html" },
+      { t: "从零编写 NES 模拟器", l: "C++", u: "https://www.youtube.com/playlist?list=PLrOv9FMX8xJHqMvSGB_9G9nZZ_4IgteYf", k: "video" },
+      { t: "Common Lisp 中的 CHIP-8", l: "Common Lisp", u: "http://stevelosh.com/blog/2016/12/chip8-cpu/" },
+      { t: "JavaScript GameBoy 模拟器", l: "JavaScript", u: "http://imrannazar.com/GameBoy-Emulation-in-JavaScript" },
+      { t: "模拟基础：编写 Chip 8 模拟器/解释器", l: "Python", u: "http://omokute.blogspot.com.br/2012/06/emulation-basics-write-your-own-chip-8.html" },
+      { t: "0dmg：用 Rust 构建 Game Boy 模拟器学习 Rust", l: "Rust", u: "https://jeremybanks.github.io/0dmg/" }
+    ]
+  },
+  {
+    c: "前端框架 / 库", cat: "Front-end Framework / Library",
+    items: [
+      { t: "WTF is JSX（构建 JSX 渲染器）", l: "JavaScript", u: "https://jasonformat.com/wtf-is-jsx/" },
+      { t: "DIY 指南：构建你自己的 React", l: "JavaScript", u: "https://github.com/hexacta/didact" },
+      { t: "从零构建 React", l: "JavaScript", u: "https://www.youtube.com/watch?v=_MAD4Oly9yg", k: "video" },
+      { t: "Gooact：160 行 JavaScript 实现 React", l: "JavaScript", u: "https://medium.com/@sweetpalma/gooact-react-in-160-lines-of-javascript-44e0742ad60f" },
+      { t: "通过构建轻量级 React DOM 学习 Reconciler", l: "JavaScript", u: "https://hackernoon.com/learn-you-some-custom-react-renderers-aed7164a4199" },
+      { t: "自己构建 Redux", l: "JavaScript", u: "https://zapier.com/engineering/how-to-build-redux/" },
+      { t: "编写 Redux", l: "JavaScript", u: "https://www.jamasoftware.com/blog/lets-write-redux/" },
+      { t: "Redux：从零实现 Store", l: "JavaScript", u: "https://egghead.io/lessons/react-redux-implementing-store-from-scratch", k: "video" },
+      { t: "200 行 JavaScript 构建简化版 AngularJS", l: "JavaScript", u: "https://blog.mgechev.com/2015/03/09/build-learn-your-own-light-lightweight-angularjs/" },
+      { t: "自制 AngularJS", l: "JavaScript", u: "http://teropa.info/blog/2013/11/03/make-your-own-angular-part-1-scopes-and-digest.html" },
+      { t: "如何编写你自己的 Virtual DOM", l: "JavaScript", u: "https://medium.com/@deathmood/how-to-write-your-own-virtual-dom-ee74acc13060" },
+      { t: "从零构建前端框架", l: "JavaScript", u: "https://mfrachet.github.io/create-frontend-framework/" },
+      { t: "构建你自己的 React", l: "JavaScript", u: "https://pomb.us/build-your-own-react/" },
+      { t: "构建自定义 React 渲染器", l: "JavaScript", u: "https://youtu.be/CGpMlWVcHok", k: "video" }
+    ]
+  },
+  {
+    c: "游戏", cat: "Game",
+    items: [
+      { t: "Handmade Hero", l: "C", u: "https://handmadehero.org/" },
+      { t: "如何用 C 编写 NES 游戏", l: "C", u: "https://nesdoug.com/" },
+      { t: "C 语言国际象棋引擎", l: "C", u: "https://www.youtube.com/playlist?list=PLZ1QII7yudbc-Ky058TEaOstZHVbT-2hg", k: "video" },
+      { t: "Let's Make: Dangerous Dave", l: "C", u: "https://www.youtube.com/playlist?list=PLSkJey49cOgTSj465v2KbLZ7LMn10bCF9", k: "video" },
+      { t: "用 C 学习视频游戏编程", l: "C", u: "https://www.youtube.com/playlist?list=PLT6WFYYZE6uLMcPGS3qfpYm7T_gViYMMt", k: "video" },
+      { t: "用 C 编写数独求解器", l: "C", u: "https://www.youtube.com/playlist?list=PLkTXsX7igf8edTYU92nU-f5Ntzuf-RKvW", k: "video" },
+      { t: "用 C 编写 Rogue/Nethack RPG", l: "C", u: "https://www.youtube.com/playlist?list=PLkTXsX7igf8erbWGYT4iSAhpnJLJ0Nk5G", k: "video" },
+      { t: "俄罗斯方块重构", l: "C", u: "https://brennan.io/2015/06/12/tetris-reimplementation/" },
+      { t: "Breakout 打砖块游戏", l: "C++", u: "https://learnopengl.com/In-Practice/2D-Game/Breakout" },
+      { t: "游戏编程入门 v2.0", l: "C++", u: "http://lazyfoo.net/tutorials/SDL/" },
+      { t: "跨平台俄罗斯方块教程", l: "C++", u: "http://javilop.com/gamedev/tetris-tutorial-in-c-platform-independent-focused-in-game-logic-for-beginners/" },
+      { t: "用 C++ 重制洞窟物语", l: "C++", u: "https://www.youtube.com/watch?v=ETvApbD5xRo&list=PLNOBk_id22bw6LXhrGfhVwqQIa-M2MsLa", k: "video" },
+      { t: "重构洞窟物语", l: "C++", u: "https://www.youtube.com/playlist?list=PL006xsVEsbKjSKBmLu1clo85yLrwjY67X", k: "video" },
+      { t: "从零编写太空入侵者", l: "C++", u: "http://nicktasios.nl/posts/space-invaders-from-scratch-part-1.html" },
+      { t: "通过构建 RPG 学习 C#", l: "C#", u: "http://scottlilly.com/learn-c-by-building-a-simple-rpg-index/" },
+      { t: "用 C# 创建 Roguelike 游戏", l: "C#", u: "https://roguesharp.wordpress.com/" },
+      { t: "构建 C#/WPF RPG", l: "C#", u: "https://scottlilly.com/build-a-cwpf-rpg/" },
+      { t: "Go 游戏开发", l: "Go", u: "https://www.youtube.com/playlist?list=PLDZujg-VgQlZUy1iCqBbe5faZLMkA3g2x", k: "video" },
+      { t: "用 Java 编写 2D 游戏引擎", l: "Java", u: "https://www.youtube.com/watch?v=025QFeZfeyM", k: "video" },
+      { t: "LWJGL 3 3D 游戏开发", l: "Java", u: "https://lwjglgamedev.gitbooks.io/3d-game-development-with-lwjgl/content/" },
+      { t: "用 Phaser 开发 2D 打砖块游戏", l: "JavaScript", u: "https://developer.mozilla.org/en-US/docs/Games/Tutorials/2D_breakout_game_Phaser" },
+      { t: "用 Phaser 制作 Flappy Bird", l: "JavaScript", u: "http://www.lessmilk.com/tutorial/flappy-bird-phaser-1" },
+      { t: "用 React + Redux + SVG 开发游戏", l: "JavaScript", u: "https://auth0.com/blog/developing-games-with-react-redux-and-svg-part-1/" },
+      { t: "从零构建台球游戏", l: "JavaScript", u: "https://www.youtube.com/watch?v=aXwCrtAo4Wc", k: "video" },
+      { t: "制作你的第一个 Roguelike 游戏", l: "JavaScript", u: "https://gamedevelopment.tutsplus.com/tutorials/how-to-make-your-first-roguelike--gamedev-13677" },
+      { t: "像程序员一样思考：构建贪吃蛇", l: "JavaScript", u: "https://medium.freecodecamp.org/think-like-a-programmer-how-to-build-snake-using-only-javascript-html-and-css-7b1479c3339e" },
+      { t: "BYTEPATH", l: "Lua", u: "https://github.com/SSYGEN/blog/issues/30" },
+      { t: "用 PyGame 开发游戏", l: "Python", u: "https://pythonprogramming.net/pygame-python-3-part-1-intro/" },
+      { t: "用 Python & Pygame 制作游戏", l: "Python", u: "https://inventwithpython.com/makinggames.pdf", k: "pdf" },
+      { t: "Roguelike 教程修订版", l: "Python", u: "http://rogueliketutorials.com/" },
+      { t: "用 Ruby 开发游戏", l: "Ruby", u: "https://leanpub.com/developing-games-with-ruby/read" },
+      { t: "Ruby 贪吃蛇", l: "Ruby", u: "https://www.diatomenterprises.com/gamedev-on-ruby-why-not/" },
+      { t: "Rust 冒险：基础 2D 游戏", l: "Rust", u: "https://a5huynh.github.io/posts/2018/adventures-in-rust/" },
+      { t: "Rust + tcod Roguelike 教程", l: "Rust", u: "https://tomassedovic.github.io/roguelike-tutorial/" }
+    ]
+  },
+  {
+    c: "Git", cat: "Git",
+    items: [
+      { t: "用 Haskell 从下往上重实现 git clone", l: "Haskell", u: "http://stefan.saasen.me/articles/git-clone-in-haskell-from-the-bottom-up/" },
+      { t: "Gitlet", l: "JavaScript", u: "http://gitlet.maryrosecook.com/docs/gitlet.html" },
+      { t: "构建 GIT - 学习 GIT", l: "JavaScript", u: "https://kushagra.dev/blog/build-git-learn-git/" },
+      { t: "足够的 Git 客户端代码来实现 commit 和 push", l: "Python", u: "https://benhoyt.com/writings/pygit/" },
+      { t: "给自己写一个 Git！", l: "Python", u: "https://wyag.thb.lt/" },
+      { t: "ugit：通过构建 Git 来学习 Git 内部原理", l: "Python", u: "https://www.leshenko.net/p/ugit/" },
+      { t: "用 Ruby 重建 Git", l: "Ruby", u: "https://robots.thoughtbot.com/rebuilding-git-in-ruby" }
+    ]
+  },
+  {
+    c: "内存分配器", cat: "Memory Allocator",
+    items: [
+      { t: "Malloc 不是魔法——实现你自己的内存分配器", l: "C", u: "https://medium.com/p/e0354e914402" }
+    ]
+  },
+  {
+    c: "网络协议栈", cat: "Network Stack",
+    items: [
+      { t: "Beej 网络编程指南", l: "C", u: "http://beej.us/guide/bgnet/" },
+      { t: "编写 TCP/IP 协议栈", l: "C", u: "http://www.saminiir.com/lets-code-tcp-ip-stack-1-ethernet-arp/" },
+      { t: "构建你自己的 VPN/虚拟交换机", l: "C / Python", u: "https://github.com/peiyuanix/build-your-own-zerotier" },
+      { t: "如何用 Ruby 构建网络协议栈", l: "Ruby", u: "https://medium.com/geckoboard-under-the-hood/how-to-build-a-network-stack-in-ruby-f73aeb1b661b" }
+    ]
+  },
+  {
+    c: "神经网络", cat: "Neural Network",
+    items: [
+      { t: "神经网络 OCR", l: "C#", u: "https://www.codeproject.com/Articles/11285/Neural-Network-OCR" },
+      { t: "F# 构建神经网络（上）", l: "F#", u: "https://medium.com/data-science/building-neural-networks-in-f-part-1-a2832ae972e6" },
+      { t: "F# 构建神经网络（下）", l: "F#", u: "https://medium.com/data-science/building-neural-networks-in-f-part-2-training-evaluation-5e3a68889da6" },
+      { t: "用 Golang 构建多层感知机", l: "Go", u: "https://made2591.github.io/posts/neuralnetwork" },
+      { t: "用 Go 构建简单人工神经网络", l: "Go", u: "https://sausheong.github.io/posts/how-to-build-a-simple-artificial-neural-network-with-go/" },
+      { t: "从零用 Go 构建神经网络", l: "Go", u: "https://datadan.io/blog/neural-net-with-go" },
+      { t: "神经网络 - 编码的本质", l: "JavaScript / Java", u: "https://www.youtube.com/playlist?list=PLRqwX-V7Uu6aCibgK1PTWWu9by6XFdCfh", k: "video" },
+      { t: "面向 JS 程序员的神经网络（感知器）", l: "JavaScript", u: "https://hackernoon.com/neural-networks-from-scratch-for-javascript-linguists-part1-the-perceptron-632a4d1fbad2" },
+      { t: "11 行 Python 的神经网络", l: "Python", u: "https://iamtrask.github.io/2015/07/12/basic-python-network/" },
+      { t: "从零构建深度学习（34 阶段重实现 PyTorch）", l: "Python", u: "https://github.com/roiamiel1/Build-Deep-Learning-From-Scratch" },
+      { t: "从零实现神经网络", l: "Python", u: "https://victorzhou.com/blog/intro-to-neural-networks/" },
+      { t: "光学字符识别（OCR）", l: "Python", u: "http://aosabook.org/en/500L/optical-character-recognition-ocr.html" },
+      { t: "卷积网络交通标志分类", l: "Python", u: "https://navoshta.com/traffic-signs-classification/" },
+      { t: "用 LSTM 神经网络生成音乐", l: "Python", u: "https://towardsdatascience.com/how-to-generate-music-using-a-lstm-neural-network-in-keras-68786834d4c5" },
+      { t: "卷积神经网络入门", l: "Python", u: "https://victorzhou.com/blog/intro-to-cnns-part-1/" },
+      { t: "神经网络：从零到精通", l: "Python", u: "https://www.youtube.com/playlist?list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ", k: "video" },
+      { t: "SlowTorch：100% 纯 Python 从零实现 PyTorch", l: "Python", u: "https://github.com/xames3/slowtorch" }
+    ]
+  },
+  {
+    c: "操作系统", cat: "Operating System",
+    items: [
+      { t: "编写微型 x86 引导加载程序", l: "Assembly", u: "http://joebergeron.io/posts/post_two.html" },
+      { t: "Baking Pi – 操作系统开发", l: "Assembly", u: "http://www.cl.cam.ac.uk/projects/raspberrypi/tutorials/os/index.html" },
+      { t: "为简单计算机构建软硬件栈", l: "C", u: "https://www.youtube.com/watch?v=ZjwvMcP3Nf0&list=PLU94OURih-CiP4WxKSMt3UcwMSDM3aTtX", k: "video" },
+      { t: "操作系统：从 0 到 1", l: "C", u: "https://tuhdo.github.io/os01/" },
+      { t: "OS 开发小书", l: "C", u: "https://littleosbook.github.io/" },
+      { t: "打造类 UNIX 玩具操作系统", l: "C", u: "http://jamesmolloy.co.uk/tutorial_html/" },
+      { t: "内核 101 – 编写内核", l: "C", u: "https://arjunsreedharan.org/post/82710718100/kernel-101-lets-write-a-kernel" },
+      { t: "内核 201 – 带键盘和屏幕支持的内核", l: "C", u: "https://arjunsreedharan.org/post/99370248137/kernel-201-lets-write-a-kernel-with-keyboard" },
+      { t: "从零为 ARM 构建最小多任务内核", l: "C", u: "https://github.com/jserv/mini-arm-os" },
+      { t: "如何从零创建操作系统", l: "C", u: "https://github.com/cfenollosa/os-tutorial" },
+      { t: "Malloc 教程", l: "C", u: "https://danluu.com/malloc-tutorial/" },
+      { t: "Hack 虚拟内存", l: "C", u: "https://blog.holbertonschool.com/hack-the-virtual-memory-c-strings-proc/" },
+      { t: "用 Linux 内核和树莓派学习 OS 开发", l: "C", u: "https://github.com/s-matyukevich/raspberry-pi-os" },
+      { t: "操作系统开发傻瓜指南", l: "C", u: "https://medium.com/@lduck11007/operating-systems-development-for-dummies-3d4d786e8ac" },
+      { t: "编写你自己的操作系统", l: "C++", u: "https://www.youtube.com/playlist?list=PLHh55M_Kq4OApWScZyPl5HhgsTJS9MZ6M", k: "video" },
+      { t: "编写引导加载程序", l: "C++", u: "http://3zanders.co.uk/2017/10/13/writing-a-bootloader/" },
+      { t: "用 Rust 编写操作系统", l: "Rust", u: "https://os.phil-opp.com/" },
+      { t: "RISC-V Rust 操作系统教程", l: "Rust", u: "https://osblog.stephenmarz.com/" },
+      { t: "从零构建 Linux", l: "其他", u: "https://linuxfromscratch.org/lfs" }
+    ]
+  },
+  {
+    c: "物理引擎", cat: "Physics Engine",
+    items: [
+      { t: "视频游戏物理教程", l: "C", u: "https://www.toptal.com/game/video-game-physics-part-i-an-introduction-to-rigid-body-dynamics" },
+      { t: "Allen Chou 游戏物理系列", l: "C++", u: "http://allenchou.net/game-physics-series/" },
+      { t: "如何创建自定义物理引擎", l: "C++", u: "https://gamedevelopment.tutsplus.com/series/how-to-create-a-custom-physics-engine--gamedev-12715" },
+      { t: "3D 物理引擎教程", l: "C++", u: "https://www.youtube.com/playlist?list=PLEETnX-uPtBXm1KEr_2zQ6K_0hoGH6JJ0", k: "video" },
+      { t: "物理引擎工作原理", l: "JavaScript", u: "http://buildnewgames.com/gamephysics/" },
+      { t: "使用空间划分的宽相位碰撞检测", l: "JavaScript", u: "http://buildnewgames.com/broad-phase-collision-detection/" },
+      { t: "为 JavaScript 游戏构建简单 2D 物理引擎", l: "JavaScript", u: "https://developer.ibm.com/tutorials/wa-build2dphysicsengine/" }
+    ]
+  },
+  {
+    c: "处理器", cat: "Processor",
+    items: [
+      { t: "从闪烁 LED 到 RISC-V", l: "Verilog", u: "https://github.com/BrunoLevy/learn-fpga/tree/master/FemtoRV/TUTORIALS/FROM_BLINKER_TO_RISCV" }
+    ]
+  },
+  {
+    c: "编程语言", cat: "Programming Language",
+    items: [
+      { t: "mal - 制作一个 Lisp", l: "其他", u: "https://github.com/kanaka/mal#mal---make-a-lisp" },
+      { t: "Jonesforth", l: "Assembly", u: "https://github.com/nornagon/jonesforth/blob/master/jonesforth.S" },
+      { t: "婴儿的第一个垃圾收集器", l: "C", u: "http://journal.stuffwithstuff.com/2013/12/08/babys-first-garbage-collector/" },
+      { t: "构建你自己的 Lisp：1000 行代码学习 C 和编程语言", l: "C", u: "http://www.buildyourownlisp.com/" },
+      { t: "编写简单垃圾收集器", l: "C", u: "http://maplant.com/gc.html" },
+      { t: "可以解释自身的 C 解释器", l: "C", u: "https://github.com/lotabout/write-a-C-interpreter" },
+      { t: "C & x86 版《Let's Build a Compiler》", l: "C", u: "https://github.com/lotabout/Let-s-build-a-compiler" },
+      { t: "从零构建编译器的旅程", l: "C", u: "https://github.com/DoctorWkt/acwj" },
+      { t: "用 Flex 编写玩具编译器", l: "C++", u: "https://gnuu.org/2009/09/18/writing-your-own-toy-compiler/" },
+      { t: "如何创建编译器", l: "C++", u: "https://www.youtube.com/watch?v=eF9qWbuQLuw", k: "video" },
+      { t: "Kaleidoscope：用 LLVM 实现编程语言", l: "C++", u: "https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/index.html" },
+      { t: "理解解析器组合子", l: "F#", u: "https://fsharpforfunandprofit.com/posts/understanding-parser-combinators/" },
+      { t: "通过编写编译器来揭秘编译器", l: "Elixir", u: "https://www.youtube.com/watch?v=zMJYoYwOCd4", k: "video" },
+      { t: "超小型编译器", l: "Go", u: "https://github.com/hazbo/the-super-tiny-compiler" },
+      { t: "Go 词法扫描", l: "Go", u: "https://www.youtube.com/watch?v=HxaD_trXwRE", k: "video" },
+      { t: "构建编译器", l: "Haskell", u: "https://g-ford.github.io/cradle/" },
+      { t: "教你 Haskell", l: "Haskell", u: "http://dev.stephendiehl.com/fun/" },
+      { t: "48 小时给自己写一个 Scheme", l: "Haskell", u: "https://en.wikibooks.org/wiki/Write_Yourself_a_Scheme_in_48_Hours" },
+      { t: "教你 Scheme", l: "Haskell", u: "https://www.wespiser.com/writings/wyas/home.html" },
+      { t: "Crafting Interpreters：编程语言手册", l: "Java", u: "http://www.craftinginterpreters.com/" },
+      { t: "创建 JVM 语言", l: "Java", u: "http://jakubdziworski.github.io/categories.html#Enkel-ref" },
+      { t: "超小型编译器", l: "JavaScript", u: "https://github.com/jamiebuilds/the-super-tiny-compiler" },
+      { t: "超小型解释器", l: "JavaScript", u: "https://github.com/keyanzhang/the-super-tiny-interpreter" },
+      { t: "Little Lisp 解释器", l: "JavaScript", u: "https://maryrosecook.com/blog/post/little-lisp-interpreter" },
+      { t: "如何用 JavaScript 实现编程语言", l: "JavaScript", u: "http://lisperator.net/pltut/" },
+      { t: "编写 Lisp", l: "JavaScript", u: "https://idiocy.org/lets-go-write-a-lisp/part-1.html" },
+      { t: "编写 C 编译器", l: "OCaml", u: "https://norasandler.com/2017/11/29/Write-a-Compiler.html" },
+      { t: "编写 Lisp 系列", l: "OCaml", u: "https://bernsteinbear.com/blog/lisp/" },
+      { t: "构建编译器", l: "Pascal", u: "https://compilers.iecc.com/crenshaw/" },
+      { t: "用 Python 编写的 Python 解释器", l: "Python", u: "http://aosabook.org/en/500L/a-python-interpreter-written-in-python.html" },
+      { t: "lisp.py：打造自己的 Lisp 解释器", l: "Python", u: "http://khamidou.com/compilers/lisp.py/" },
+      { t: "如何用 Python 编写 Lisp 解释器", l: "Python", u: "http://norvig.com/lispy.html" },
+      { t: "构建简单解释器", l: "Python", u: "https://ruslanspivak.com/lsbasi-part1/" },
+      { t: "制作你自己的简单解释型编程语言", l: "Python", u: "https://www.youtube.com/watch?v=dj9CBS3ikGA&list=PLZQftyCk7_SdoVexSmwy_tBgs7P0b97yD&index=1", k: "video" },
+      { t: "从源码到机器码：从零构建编译器", l: "Python", u: "https://build-your-own.org/compiler/" },
+      { t: "Beautiful Racket：用 Racket 制作编程语言", l: "Racket", u: "https://beautifulracket.com/" },
+      { t: "从零构建编译器", l: "Ruby", u: "https://www.destroyallsoftware.com/screencasts/catalog/a-compiler-from-scratch" },
+      { t: "从零用 Ruby 编写 Markdown 编译器", l: "Ruby", u: "https://blog.beezwax.net/2017/07/07/writing-a-markdown-compiler/" },
+      { t: "用 Rust 学习解析器组合子", l: "Rust", u: "https://bodil.lol/parser-combinators/" },
+      { t: "用 Swift 从零构建 Lisp", l: "Swift", u: "https://www.uraimo.com/2017/02/05/building-a-lisp-from-scratch-with-swift/" },
+      { t: "构建你自己的 WebAssembly 编译器", l: "TypeScript", u: "https://blog.scottlogic.com/2019/05/17/webassembly-compiler.html" }
+    ]
+  },
+  {
+    c: "正则表达式引擎", cat: "Regex Engine",
+    items: [
+      { t: "正则表达式匹配器", l: "C", u: "https://www.cs.princeton.edu/courses/archive/spr09/cos333/beautiful.html" },
+      { t: "正则表达式匹配可以简单且快速", l: "C", u: "https://swtch.com/~rsc/regexp/regexp1.html" },
+      { t: "从零构建正则表达式引擎", l: "Go", u: "https://rhaeguard.github.io/posts/regex" },
+      { t: "40 行代码构建正则表达式引擎", l: "JavaScript", u: "https://nickdrane.com/build-your-own-regex/" },
+      { t: "用函数式 JavaScript 实现正则表达式", l: "JavaScript", u: "http://dpk.io/dregs/toydregs" },
+      { t: "实现正则表达式引擎", l: "JavaScript", u: "https://deniskyashif.com/2019/02/17/implementing-a-regular-expression-engine/" },
+      { t: "正则表达式工作原理", l: "Perl", u: "https://perl.plover.com/Regex/article.html" },
+      { t: "构建你自己的正则表达式引擎：回溯、NFA、DFA", l: "Python", u: "https://build-your-own.org/b2a/r0_intro" },
+      { t: "没有魔法：正则表达式", l: "Scala", u: "https://rcoh.svbtle.com/no-magic-regular-expressions" }
+    ]
+  },
+  {
+    c: "搜索引擎", cat: "Search Engine",
+    items: [
+      { t: "CSS 搜索引擎", l: "CSS", u: "https://stories.algolia.com/a-search-engine-in-css-b5ec4e902e97" },
+      { t: "用 Redis 和 redis-py 构建搜索引擎", l: "Python", u: "http://www.dr-josiah.com/2010/07/building-search-engine-using-redis-and.html" },
+      { t: "用 Python 构建向量空间索引引擎", l: "Python", u: "https://boyter.org/2010/08/build-vector-space-search-engine-python/" },
+      { t: "用 Python 构建搜索引擎", l: "Python", u: "https://www.youtube.com/watch?v=cY7pE7vX6MU", k: "video" },
+      { t: "让文本搜索从反馈中学习", l: "Python", u: "https://medium.com/filament-ai/making-text-search-learn-from-feedback-4fe210fd87b0" },
+      { t: "使用 TF-IDF 查找文本中的重要词汇", l: "Python", u: "https://stevenloria.com/tf-idf/" }
+    ]
+  },
+  {
+    c: "Shell", cat: "Shell",
+    items: [
+      { t: "教程 - 用 C 编写 Shell", l: "C", u: "https://brennan.io/2015/01/16/write-a-shell-in-c/" },
+      { t: "构建 Shell！", l: "C", u: "https://github.com/kamalmarhubi/shell-workshop" },
+      { t: "编写 UNIX Shell", l: "C", u: "https://indradhanush.github.io/blog/writing-a-unix-shell-part-1/" },
+      { t: "构建你自己的 Shell", l: "C", u: "https://github.com/tokenrove/build-your-own-shell" },
+      { t: "用 C 编写 Shell", l: "C", u: "https://danishpraka.sh/posts/write-a-shell/" },
+      { t: "用 Go 编写简单 Shell", l: "Go", u: "https://sj14.gitlab.io/post/2018-07-01-go-unix-shell/" },
+      { t: "用 Rust 构建你自己的 Shell", l: "Rust", u: "https://www.joshmcguigan.com/blog/build-your-own-shell-rust/" }
+    ]
+  },
+  {
+    c: "模板引擎", cat: "Template Engine",
+    items: [
+      { t: "仅 20 行的 JavaScript 模板引擎", l: "JavaScript", u: "http://krasimirtsonev.com/blog/article/Javascript-template-engine-in-just-20-line" },
+      { t: "理解 JavaScript 微模板", l: "JavaScript", u: "https://medium.com/wdstack/understanding-javascript-micro-templating-f37a37b3b40e" },
+      { t: "用 Python 构建玩具模板引擎", l: "Python", u: "http://alexmic.net/building-a-template-engine/" },
+      { t: "模板引擎", l: "Python", u: "http://aosabook.org/en/500L/a-template-engine.html" },
+      { t: "30 行代码编写模板引擎", l: "Ruby", u: "http://bits.citrusbyte.com/how-to-write-a-template-library/" }
+    ]
+  },
+  {
+    c: "文本编辑器", cat: "Text Editor",
+    items: [
+      { t: "构建你自己的文本编辑器", l: "C", u: "https://viewsourcecode.org/snaptoken/kilo/" },
+      { t: "设计简单文本编辑器", l: "C++", u: "http://www.fltk.org/doc-1.1/editor.html" },
+      { t: "Python 教程：制作你自己的文本编辑器", l: "Python", u: "https://www.youtube.com/watch?v=xqDonHEYPgA", k: "video" },
+      { t: "创建简单 Python 文本编辑器", l: "Python", u: "http://www.instructables.com/id/Create-a-Simple-Python-Text-Editor/" },
+      { t: "用 Rails 构建协作文本编辑器", l: "Ruby", u: "https://blog.aha.io/text-editor/" },
+      { t: "Hecto：用 Rust 构建文本编辑器", l: "Rust", u: "https://www.flenker.blog/hecto/" }
+    ]
+  },
+  {
+    c: "视觉识别系统", cat: "Visual Recognition System",
+    items: [
+      { t: "用机器学习开发车牌识别系统", l: "Python", u: "https://medium.com/devcenter/developing-a-license-plate-recognition-system-with-machine-learning-in-python-787833569ccd" },
+      { t: "用 TensorFlow 构建人脸识别管道", l: "Python", u: "https://hackernoon.com/building-a-facial-recognition-pipeline-with-deep-learning-in-tensorflow-66e7645015b8" }
+    ]
+  },
+  {
+    c: "体素引擎", cat: "Voxel Engine",
+    items: [
+      { t: "制作体素引擎", l: "C++", u: "https://sites.google.com/site/letsmakeavoxelengine/home" }
+    ]
+  },
+  {
+    c: "网页浏览器", cat: "Web Browser",
+    items: [
+      { t: "构建浏览器引擎", l: "Rust", u: "https://limpet.net/mbrubeck/2014/08/08/toy-layout-engine-1.html" },
+      { t: "浏览器工程", l: "Python", u: "https://browser.engineering" }
+    ]
+  },
+  {
+    c: "Web 服务器", cat: "Web Server",
+    items: [
+      { t: "从零编写 Web 服务器", l: "C#", u: "https://www.codeproject.com/Articles/859108/Writing-a-Web-Server-from-Scratch" },
+      { t: "用 JavaScript 从零构建 Web 服务器", l: "Node.js", u: "https://build-your-own.org/webserver/" },
+      { t: "用 Node.js Streams 编写 Web 服务器", l: "Node.js", u: "https://www.codementor.io/@ziad-saab/let-s-code-a-web-server-from-scratch-with-nodejs-streams-h4uc9utji" },
+      { t: "构建 Express", l: "Node.js", u: "https://github.com/antoaravinth/lets-build-express" },
+      { t: "用纯 PHP 编写 Web 服务器", l: "PHP", u: "http://station.clancats.com/writing-a-webserver-in-pure-php/" },
+      { t: "简单 Web 服务器", l: "Python", u: "http://aosabook.org/en/500L/a-simple-web-server.html" },
+      { t: "构建 Web 服务器", l: "Python", u: "https://ruslanspivak.com/lsbaws-part1/" },
+      { t: "从零写 Web 应用", l: "Python", u: "https://defn.io/2018/02/25/web-app-from-scratch-01/" },
+      { t: "用 Python 构建基础 HTTP 服务器", l: "Python", u: "http://joaoventura.net/blog/2017/python-webserver/" },
+      { t: "用 Python & Flask 实现 RESTful API", l: "Python", u: "http://blog.luisrei.com/articles/flaskrest.html" },
+      { t: "从零用 Ruby 构建简单 WebSocket 服务器", l: "Ruby", u: "http://blog.honeybadger.io/building-a-simple-websockets-server-from-scratch-in-ruby/" }
+    ]
+  },
+  {
+    c: "未分类", cat: "Uncategorized",
+    items: [
+      { t: "从 NAND 到 Tetris：从基本原理构建现代计算机", l: "其他", u: "http://nand2tetris.org/" },
+      { t: "build-your-own-x-vibe-coding：适用于 vibe coding 的 BYOX 教程", l: "其他", u: "https://github.com/inFaaa/build-your-own-x-vibe-coding" },
+      { t: "同源策略", l: "Alloy", u: "http://aosabook.org/en/500L/the-same-origin-policy.html" },
+      { t: "1000 行以内编写视频播放器", l: "C", u: "http://dranger.com/ffmpeg/ffmpeg.html" },
+      { t: "学习用 C 编写哈希表", l: "C", u: "https://github.com/jamesroutley/write-a-hash-table" },
+      { t: "终端模拟器的基础知识", l: "C", u: "https://www.uninformativ.de/blog/postings/2018-02-24/0/POSTING-en.html" },
+      { t: "编写系统调用", l: "C", u: "https://brennan.io/2016/11/14/kernel-dev-ep3/" },
+      { t: "Sol - 从零构建 MQTT 代理", l: "C", u: "https://codepr.github.io/posts/sol-mqtt-broker" },
+      { t: "200 美元构建你自己的 VR 头显", l: "C++", u: "https://github.com/relativty/Relativ" },
+      { t: "X 窗口管理器的工作原理及如何编写", l: "C++", u: "https://seasonofcode.com/posts/how-x-window-managers-work-and-how-to-write-one-part-i.html" },
+      { t: "编写 Linux 调试器", l: "C++", u: "https://blog.tartanllama.xyz/writing-a-linux-debugger-setup/" },
+      { t: "64k 演示的制作方法", l: "C++", u: "http://www.lofibucket.com/articles/64k_intro.html" },
+      { t: "制作你自己的游戏引擎", l: "C++", u: "https://www.youtube.com/playlist?list=PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT", k: "video" },
+      { t: "C# 网络编程：TCP 聊天服务器、UDP Pong 等", l: "C#", u: "https://16bpp.net/tutorials/csharp-networking" },
+      { t: "从零用 C# 和 GLSL 加载和渲染 3D 骨骼动画", l: "C#", u: "https://www.seanjoflynn.com/research/skeletal-animation.html" },
+      { t: "构建拼写检查器", l: "Clojure", u: "https://bernhardwenzel.com/articles/clojure-spellchecker/" },
+      { t: "100 行 Go 代码构建简单终端模拟器", l: "Go", u: "https://ishuah.com/2021/03/10/build-a-terminal-emulator-in-100-lines-of-go/" },
+      { t: "创建简单负载均衡器", l: "Go", u: "https://kasvith.me/posts/lets-create-a-simple-lb-go/" },
+      { t: "从零实现视频编码", l: "Go", u: "https://github.com/kevmo314/codec-from-scratch" },
+      { t: "如何构建 Android Reddit App", l: "Java", u: "https://www.youtube.com/playlist?list=PLgCYzUzKIBE9HUJU-upNvl3TRVAo9W47y", k: "video" },
+      { t: "构建你自己的模块打包器 - Minipack", l: "JavaScript", u: "https://github.com/ronami/minipack" },
+      { t: "通过从零构建 Promise 来学习 JavaScript Promise", l: "JavaScript", u: "https://levelup.gitconnected.com/understand-javascript-promises-by-building-a-promise-from-scratch-84c0fd855720" },
+      { t: "用 TDD 方式实现 Promise", l: "JavaScript", u: "https://www.mauriciopoppe.com/notes/computer-science/computation/promises/" },
+      { t: "实现你自己的 call()、apply() 和 bind()", l: "JavaScript", u: "https://blog.usejournal.com/implement-your-own-call-apply-and-bind-method-in-javascript-42cc85dba1b" },
+      { t: "JavaScript 算法与数据结构", l: "JavaScript", u: "https://github.com/trekhleb/javascript-algorithms" },
+      { t: "用 React Native 构建打车应用", l: "JavaScript", u: "https://pusher.com/tutorials/ride-hailing-react-native" },
+      { t: "10 分钟构建自己的广告拦截器", l: "JavaScript", u: "https://levelup.gitconnected.com/building-your-own-adblocker-in-literally-10-minutes-1eec093b04cd" },
+      { t: "构建你自己的缓存", l: "Kotlin", u: "https://github.com/kezhenxu94/cache-lite" },
+      { t: "通过构建 CDN 来学习 CDN", l: "Lua", u: "https://github.com/leandromoreira/cdn-up-and-running" },
+      { t: "编写 Redis 协议解析器", l: "Nim", u: "https://xmonader.github.io/nimdays/day12_resp.html" },
+      { t: "编写构建系统", l: "Nim", u: "https://xmonader.github.io/nimdays/day11_buildsystem.html" },
+      { t: "编写 MiniTest 框架", l: "Nim", u: "https://xmonader.github.io/nimdays/day08_minitest.html" },
+      { t: "编写 DMIDecode 解析器", l: "Nim", u: "https://xmonader.github.io/nimdays/day01_dmidecode.html" },
+      { t: "编写 INI 解析器", l: "Nim", u: "https://xmonader.github.io/nimdays/day05_iniparser.html" },
+      { t: "编写链接检查器", l: "Nim", u: "https://xmonader.github.io/nimdays/day04_asynclinkschecker.html" },
+      { t: "编写 URL 缩短服务", l: "Nim", u: "https://xmonader.github.io/nimdays/day07_shorturl.html" },
+      { t: "40 行 Node.js 构建静态站点生成器", l: "Node.js", u: "https://www.webdevdrops.com/en/build-static-site-generator-nodejs-8969ebe34b22/" },
+      { t: "从零构建简单单点登录服务器", l: "Node.js", u: "https://codeburst.io/building-a-simple-single-sign-on-sso-server-and-solution-from-scratch-in-node-js-ea6ee5fdf340" },
+      { t: "创建真实世界的 Node CLI 应用", l: "Node.js", u: "https://medium.freecodecamp.org/how-to-create-a-real-world-node-cli-app-with-node-391b727bbed3" },
+      { t: "用 Node.js 构建 DNS 服务器", l: "Node.js", u: "https://engineerhead.github.io/dns-server/" },
+      { t: "用 Node.js 和 Y.js 构建同步引擎", l: "Node.js", u: "https://greenvitriol.com/posts/sync-engine-for-everyone" },
+      { t: "从零用 PHP 编写 MVC", l: "PHP", u: "https://chaitya62.github.io/2018/04/29/Writing-your-own-MVC-from-Scratch-in-PHP.html" },
+      { t: "制作你自己的博客", l: "PHP", u: "https://ilovephp.jondh.me.uk/en/tutorial/make-your-own-blog" },
+      { t: "无框架的现代 PHP", l: "PHP", u: "https://kevinsmith.io/modern-php-without-a-framework" },
+      { t: "用 PHP 编写 Web 搜索引擎", l: "PHP", u: "https://boyter.org/2013/01/code-for-a-search-engine-in-php-part-1/" },
+      { t: "构建深度学习库", l: "Python", u: "https://www.youtube.com/watch?v=o64FV-ez6Gw", k: "video" },
+      { t: "5 分钟构建移动文档扫描仪", l: "Python", u: "https://www.pyimagesearch.com/2014/09/01/build-kick-ass-mobile-document-scanner-just-5-minutes/" },
+      { t: "持续集成系统", l: "Python", u: "http://aosabook.org/en/500L/a-continuous-integration-system.html" },
+      { t: "Python 推荐系统入门", l: "Python", u: "https://www.datacamp.com/community/tutorials/recommender-systems-python" },
+      { t: "用 Scikit-learn 编写短信垃圾检测器", l: "Python", u: "https://medium.com/@kopilov.vlad/detect-sms-spam-in-kaggle-with-scikit-learn-5f6afa7a3ca2" },
+      { t: "基于内容的简单推荐引擎", l: "Python", u: "http://blog.untrod.com/2016/06/simple-similar-products-recommendation-engine-in-python.html" },
+      { t: "用 LSTM 预测股票市场", l: "Python", u: "https://www.datacamp.com/community/tutorials/lstm-python-stock-market" },
+      { t: "用 Tensorflow 构建简单 GAN", l: "Python", u: "https://blog.paperspace.com/implementing-gans-in-tensorflow/" },
+      { t: "通过编码学习 ML 算法：决策树", l: "Python", u: "https://lethalbrains.com/learn-ml-algorithms-by-coding-decision-trees-439ac503c9a4" },
+      { t: "JSON 解码算法", l: "Python", u: "https://github.com/cheery/json-algorithm" },
+      { t: "用 Python 构建 Git 插件", l: "Python", u: "https://joshburns-xyz.vercel.app/posts/build-your-own-git-plugin" },
+      { t: "现实世界中的计步器", l: "Ruby", u: "http://aosabook.org/en/500L/a-pedometer-in-the-real-world.html" },
+      { t: "用 Ruby 创建 Linux 桌面应用", l: "Ruby", u: "https://iridakos.com/tutorials/2018/01/25/creating-a-gtk-todo-application-with-ruby" },
+      { t: "用 Rust 构建 DNS 服务器", l: "Rust", u: "https://github.com/EmilHernvall/dnsguide/blob/master/README.md" },
+      { t: "从零编写可扩展聊天服务", l: "Rust", u: "https://nbaksalyar.github.io/2015/07/10/writing-chat-in-rust.html" },
+      { t: "WebGL + Rust：基础水效果教程", l: "Rust", u: "https://www.chinedufn.com/3d-webgl-basic-water-tutorial/" },
+      { t: "微型包管理器：了解 npm 或 Yarn 的工作原理", l: "TypeScript", u: "https://github.com/g-plane/tiny-package-manager" }
+    ]
+  }
+];
+
+let allLanguages = new Set();
+
+data.forEach(cat => {
+  cat.items.forEach(item => {
+    if (item.k === undefined) item.k = "";
+    item.l.split("/").forEach(l => {
+      const lang = l.trim();
+      if (lang) allLanguages.add(lang);
+    });
+  });
+});
+
+const langList = [...allLanguages].sort();
+
+// Render filter buttons
+const filterEl = document.getElementById("langFilter");
+let filterHtml = `<button class="all-btn active" onclick="setLang('')">全部</button>`;
+langList.forEach(lang => {
+  filterHtml += `<button onclick="setLang('${lang}')">${lang}</button>`;
+});
+filterEl.innerHTML = filterHtml;
+
+let currentLang = "";
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll("#langFilter button").forEach(b => b.classList.remove("active"));
+  if (lang === "") {
+    document.querySelector("#langFilter .all-btn").classList.add("active");
+  } else {
+    document.querySelectorAll(`#langFilter button`).forEach(b => {
+      if (b.textContent === lang) b.classList.add("active");
+    });
+  }
+  filterCards();
+}
+
+function filterCards() {
+  const query = document.getElementById("searchInput").value.toLowerCase().trim();
+
+  let totalItems = 0;
+  let visibleItems = 0;
+
+  let html = "";
+  data.forEach(cat => {
+    const filtered = cat.items.filter(item => {
+      const matchLang = !currentLang || item.l.split("/").some(l => l.trim() === currentLang);
+      const matchSearch = !query || item.t.toLowerCase().includes(query) || item.l.toLowerCase().includes(query) || item.t.includes(query);
+      return matchLang && matchSearch;
+    });
+
+    if (filtered.length === 0) return;
+
+    totalItems += cat.items.length;
+    visibleItems += filtered.length;
+
+    html += `<div class="category">`;
+    html += `<div class="category-title">${cat.c} <span class="count">(${filtered.length} 个教程)</span></div>`;
+    html += `<div class="card-grid">`;
+
+    filtered.forEach(item => {
+      let tags = `<span class="tag">${item.l}</span>`;
+      if (item.k === "video") tags += `<span class="tag tag-video">🎬 视频</span>`;
+      if (item.k === "pdf") tags += `<span class="tag tag-pdf">📄 PDF</span>`;
+
+      html += `<div class="card">`;
+      html += `<div class="card-title"><a href="${item.u}" target="_blank" rel="noopener">${item.t}</a></div>`;
+      html += `<div class="card-meta">${tags}</div>`;
+      html += `</div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  document.getElementById("cardsContainer").innerHTML = html || `<div class="empty"><div class="big">🔍</div><p>没有找到匹配的教程，试试其他关键词或语言过滤</p></div>`;
+
+  document.getElementById("stats").textContent = `共 ${totalItems} 个教程，当前显示 ${visibleItems} 个`;
+}
+
+filterCards();
+</script>
+
+</body>
+</html>
